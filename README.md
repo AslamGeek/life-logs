@@ -1,48 +1,33 @@
 # Daymark — Personal Life Event Tracker
 
-A responsive, mobile-first event log served by Google Apps Script. Google Sheets is the only persistent store; Apps Script reads and writes the user-provided spreadsheet directly. There is no mock dataset, separate database, external analytics, AI service, or browser-held privileged credential.
+The tracker UI is served by Vercel at the Vercel project URL. The browser stays on that URL. A Vercel serverless API relays data requests to Google Apps Script, which reads and writes the supplied Google Sheet. Apps Script never serves or redirects the app UI.
 
-## Deploy to the provided spreadsheet
+## One-time setup
 
-1. Open [the Daymark spreadsheet](https://docs.google.com/spreadsheets/d/11BXs1kwoDycjSUULlaY6_clbd_yXtpFQC3yOoAF_Jc0/edit).
-2. Choose **Extensions → Apps Script**. This creates a script bound to the spreadsheet.
-3. Replace the starter `Code.gs` with this folder's `Code.gs`. It loads the Apps Script HTML file named `Tracker`, with a fallback to `Index` for an existing install. Add HTML files named `Tracker`, `Styles`, and `Client`, copying the corresponding `.html` files. (The lowercase `index.html` is the separate Vercel launch page.) Set the manifest in Project Settings or replace `appsscript.json` with the provided manifest.
-4. Save. In the editor, select and run `setupTracker` once. Review the Google permission prompt and authorize Sheets access. It creates the `Activities` and `Events` tabs with the required headers if they do not already exist. Existing nonempty tabs are retained; unexpected headers cause a clear error rather than being overwritten.
-5. Run `runDateLogicTests` in the editor; it should return three passing date cases.
-6. Choose **Deploy → New deployment → Web app**. Set **Execute as: User accessing the web app** and **Who has access: Only myself**. Deploy and authorize. Open the web app URL while signed into the same Google account that owns/has edit access to the spreadsheet.
-7. To publish changes later, use **Deploy → Manage deployments → Edit → New version → Deploy**. The deployment URL remains the same.
+1. In the provided Sheet, open **Extensions → Apps Script**. Replace `Code.gs` with this folder's `Code.gs`. Keep the Apps Script project bound to the supplied spreadsheet.
+2. In Apps Script **Project Settings → Script properties**, add `API_TOKEN` with a long random value. Generate one in PowerShell with `[Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))`.
+3. Save, then deploy Apps Script as a **Web app** with **Execute as: Me** and **Who has access: Anyone**. This deployment is a private-data API endpoint called server-to-server by Vercel; it is not the app's URL and the page never navigates there. Copy its `/exec` URL.
+4. In the Apps Script editor, run `setupTracker` once and approve access to the Sheet.
+5. In Vercel project settings, set these environment variables for Production (use the same `API_TOKEN` value in both places):
+   - `APPS_SCRIPT_URL`: Apps Script deployment `/exec` URL.
+   - `APPS_SCRIPT_TOKEN`: the `API_TOKEN` from Script properties.
+   - `APP_ACCESS_PASSWORD`: a separate strong password for opening the tracker.
+6. Push this folder to the GitHub repository and redeploy the latest commit in Vercel. Open the Vercel URL. The app asks for the access password once per browser session; its UI and navigation stay on the Vercel domain.
 
-The code includes the spreadsheet ID supplied in the request. Google authorization and web-app deployment happen in the user's Google account; this workspace cannot claim the app is connected until the live deployment is authorized and a real read/write round trip has been confirmed.
+The UI is a single self-contained `index.html` so layout, styling, and browser behavior ship together. Push changes to `index.html` and Vercel redeploys it. Backend changes go in `Code.gs`, then deploy a new Apps Script version; the Apps Script URL remains an internal API setting in Vercel.
 
-## Publish the source to GitHub
+## Files and data
 
-Run `Push-to-GitHub.cmd` from this folder on a machine with Git installed and authenticated for `AslamGeek/life-logs`. It clones the repository to a fresh temporary directory, copies these app files into the repository root, creates/pushes `main`, and asks for Git author name/email if Git has no configured identity. It does not overwrite a local checkout or store a GitHub token in the script. Review the Git output; the temporary clone is left in place after completion.
+- `index.html`: self-contained Vercel-hosted UI.
+- `api/tracker.js`: Vercel server-side relay. It checks the app access password and forwards only approved operations to Apps Script.
+- `Code.gs`: Apps Script JSON API and Google Sheets data logic. Its `doGet()` only returns service metadata; it does not serve the UI.
 
-The Google Apps Script UI and Sheets backend run on Apps Script. The root `index.html` is a small Vercel launch page: it stores the Apps Script deployment URL in that browser and opens the actual tracker on Google. The repository-root `vercel.json` explicitly serves that page at `/`. After pushing, make sure the Vercel project's Root Directory is the repository root and redeploy the latest `main` commit. The page asks for the URL copied from Apps Script → Deploy → Manage deployments. It does not mirror event data or Google credentials into Vercel.
+The Sheet has `Activities` and `Events` tabs with stable IDs and the headers declared in `Code.gs`. The backend validates inputs and uses a script lock for writes. The browser does not store a Google credential or call `google.script.run`.
 
-## Data model
+## GitHub and Vercel
 
-`Activities`: `activity_id`, `name`, `category`, `tags`, `reminder_interval_days`, `created_at`, `updated_at`, `archived`.
+Run `Push-to-GitHub.cmd` from this folder on a machine with Git installed and authenticated for `AslamGeek/life-logs`. It pushes the Vercel app and API source to `main`. Configure the Vercel project to deploy the repository root and set the three environment variables above. No Vercel `index.html` redirect page is used.
 
-`Events`: `event_id`, `activity_id`, `activity_name`, `occurred_at`, `recorded_at`, `notes`, `tags`, `updated_at`.
+## Privacy
 
-IDs are UUIDs and are the row reconciliation keys. Timestamps are ISO 8601 UTC strings; the browser displays them in the device's local timezone. Renaming an activity preserves its ID, so existing events continue to display the new name. Archiving never deletes events. Event retries carry the same event ID, edits update the matching row, and deletion locates the confirmed ID under a script lock.
-
-## Included behavior
-
-- Dashboard with monthly count, tracked activities, last occurrence, elapsed time, and recent events.
-- Quick event entry with current local time, past-date editing, free-form activities, notes, and tags.
-- Activity create/edit/archive/restore, categories, and reminder interval metadata.
-- Search across event name, notes, and tags; activity/category filters; sort order; incremental history loading; edit and confirmed delete.
-- Manual refresh and visible sync status. Spreadsheet edits appear on refresh/reload.
-- Server-side validation, ID-based writes, and a `LockService` lock for writes.
-
-## Privacy and limitations
-
-The web app is restricted to the deploying user's Google account when deployed as described. The manifest requests the current-spreadsheet scope only, and the server verifies that the script is bound to the configured spreadsheet ID. Apps Script's authorization prompt grants access to that spreadsheet. Do not change access to “Anyone.” The app does not include another user's login/session layer; “Only myself” is its access control.
-
-Google Sheets and Apps Script have request quotas, network latency, and limited concurrency compared with a database. A script lock serializes app writes, but cannot prevent simultaneous manual edits in the spreadsheet. There is no offline queue, background sync, or real-time synchronization. A manual refresh reads current sheet contents. Keep notes private: they are stored in the spreadsheet and are not sent to an AI/analytics service.
-
-## Verification
-
-Run `runDateLogicTests` from the Apps Script editor. Then perform the live checklist after deployment: create an activity and current event, add a retrospective event, refresh, check latest events and history search, edit and delete one event, then rename/archive an activity and confirm history remains. To check backend connectivity, the dashboard must show a successful sync and a newly saved event must appear in the `Events` tab. OAuth authorization and live Sheets write verification require the spreadsheet owner's Google account and cannot be completed from this local workspace.
+The Vercel access password limits use of the relay, and the Apps Script token prevents requests without the server-side token. Keep both secrets private and rotate them if exposed. The Apps Script deployment is public at the transport layer because Vercel calls it without a Google user session; its data methods require the secret token. Do not put either secret in `index.html` or client code.

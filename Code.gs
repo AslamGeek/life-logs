@@ -4,20 +4,28 @@ const EVENT_SHEET = 'Events';
 const ACTIVITY_HEADERS = ['activity_id','name','category','tags','reminder_interval_days','created_at','updated_at','archived'];
 const EVENT_HEADERS = ['event_id','activity_id','activity_name','occurred_at','recorded_at','notes','tags','updated_at'];
 
+// Apps Script is a JSON backend only. The UI is served at the Vercel domain.
 function doGet() {
-  let template;
-  try {
-    template = HtmlService.createTemplateFromFile('Tracker');
-  } catch (error) {
-    // Existing installs may still have the original HTML file named Index.
-    template = HtmlService.createTemplateFromFile('Index');
-  }
-  return template.evaluate()
-    .setTitle('Daymark — Personal Event Tracker')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  return json_({ok:true, service:'Daymark Sheets API'});
 }
 
-function include(filename) { return HtmlService.createHtmlOutputFromFile(filename).getContent(); }
+function doPost(e) {
+  try {
+    const request = JSON.parse(e && e.postData && e.postData.contents || '{}');
+    const expected = PropertiesService.getScriptProperties().getProperty('API_TOKEN');
+    if (!expected || request.token !== expected) throw new Error('Unauthorized backend request.');
+    const methods = {getAppData:getAppData, saveActivity:saveActivity, saveEvent:saveEvent, deleteEvent:deleteEvent};
+    const method = methods[request.method];
+    if (!method) throw new Error('Unsupported API method.');
+    return json_({ok:true, result:method.apply(null, request.args || [])});
+  } catch (error) {
+    return json_({ok:false, error:String(error && error.message || error)});
+  }
+}
+
+function json_(value) {
+  return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);
+}
 
 function setupTracker() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
