@@ -5,7 +5,14 @@ const ACTIVITY_HEADERS = ['activity_id','name','category','tags','reminder_inter
 const EVENT_HEADERS = ['event_id','activity_id','activity_name','occurred_at','recorded_at','notes','tags','updated_at'];
 
 function doGet() {
-  return HtmlService.createTemplateFromFile('Tracker').evaluate()
+  let template;
+  try {
+    template = HtmlService.createTemplateFromFile('Tracker');
+  } catch (error) {
+    // Existing installs may still have the original HTML file named Index.
+    template = HtmlService.createTemplateFromFile('Index');
+  }
+  return template.evaluate()
     .setTitle('Daymark — Personal Event Tracker')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }

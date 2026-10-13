@@ -6,7 +6,7 @@ A responsive, mobile-first event log served by Google Apps Script. Google Sheets
 
 1. Open [the Daymark spreadsheet](https://docs.google.com/spreadsheets/d/11BXs1kwoDycjSUULlaY6_clbd_yXtpFQC3yOoAF_Jc0/edit).
 2. Choose **Extensions → Apps Script**. This creates a script bound to the spreadsheet.
-3. Replace the starter `Code.gs` with this folder's `Code.gs`. Add HTML files named `Tracker`, `Styles`, and `Client`, copying the corresponding `.html` files. (The lowercase `index.html` is the separate Vercel launch page.) Set the manifest in Project Settings or replace `appsscript.json` with the provided manifest.
+3. Replace the starter `Code.gs` with this folder's `Code.gs`. It loads the Apps Script HTML file named `Tracker`, with a fallback to `Index` for an existing install. Add HTML files named `Tracker`, `Styles`, and `Client`, copying the corresponding `.html` files. (The lowercase `index.html` is the separate Vercel launch page.) Set the manifest in Project Settings or replace `appsscript.json` with the provided manifest.
 4. Save. In the editor, select and run `setupTracker` once. Review the Google permission prompt and authorize Sheets access. It creates the `Activities` and `Events` tabs with the required headers if they do not already exist. Existing nonempty tabs are retained; unexpected headers cause a clear error rather than being overwritten.
 5. Run `runDateLogicTests` in the editor; it should return three passing date cases.
 6. Choose **Deploy → New deployment → Web app**. Set **Execute as: User accessing the web app** and **Who has access: Only myself**. Deploy and authorize. Open the web app URL while signed into the same Google account that owns/has edit access to the spreadsheet.
