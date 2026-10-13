@@ -12,8 +12,6 @@ function doGet() {
 function doPost(e) {
   try {
     const request = JSON.parse(e && e.postData && e.postData.contents || '{}');
-    const expected = PropertiesService.getScriptProperties().getProperty('API_TOKEN');
-    if (!expected || request.token !== expected) throw new Error('Unauthorized backend request.');
     const methods = {getAppData:getAppData, saveActivity:saveActivity, saveEvent:saveEvent, deleteEvent:deleteEvent};
     const method = methods[request.method];
     if (!method) throw new Error('Unsupported API method.');

@@ -1,15 +1,8 @@
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed.' });
 
-  const accessPassword = process.env.APP_ACCESS_PASSWORD;
   const appsScriptUrl = process.env.APPS_SCRIPT_URL;
-  const backendToken = process.env.APPS_SCRIPT_TOKEN;
-  if (!accessPassword || !appsScriptUrl || !backendToken) {
-    return res.status(503).json({ ok: false, error: 'Vercel backend is not configured yet.' });
-  }
-  if (req.headers['x-app-password'] !== accessPassword) {
-    return res.status(401).json({ ok: false, error: 'Access key is incorrect.' });
-  }
+  if (!appsScriptUrl) return res.status(503).json({ ok: false, error: 'Missing Vercel environment variable: APPS_SCRIPT_URL.' });
 
   const { method, args = [] } = req.body || {};
   const allowed = new Set(['getAppData', 'saveActivity', 'saveEvent', 'deleteEvent']);
@@ -21,7 +14,7 @@ module.exports = async function handler(req, res) {
     const upstream = await fetch(appsScriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: backendToken, method, args }),
+      body: JSON.stringify({ method, args }),
       redirect: 'follow'
     });
     const text = await upstream.text();

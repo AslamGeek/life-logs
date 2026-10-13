@@ -20,11 +20,8 @@
 const state = {activities:[],events:[],page:'dashboard',historyLimit:30,searchTimer:null};
 const $ = id => document.getElementById(id);
 async function call(method,...args){
-  let password=sessionStorage.getItem('daymark-access-key');
-  if(!password){password=window.prompt('Enter your Daymark access key');if(!password)throw new Error('Access key required.');sessionStorage.setItem('daymark-access-key',password)}
-  const response=await fetch('/api/tracker',{method:'POST',headers:{'Content-Type':'application/json','X-App-Password':password},body:JSON.stringify({method,args})});
+  const response=await fetch('/api/tracker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({method,args})});
   const body=await response.json().catch(()=>({ok:false,error:'The Vercel API returned an invalid response.'}));
-  if(response.status===401){sessionStorage.removeItem('daymark-access-key');throw new Error('Access key is incorrect. Refresh and try again.')}
   if(!response.ok||!body.ok)throw new Error(body.error||'Could not sync with your Google Sheet.');
   return body.result;
 }
