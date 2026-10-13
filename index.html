@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8faf7">
+  <title>Daymark — Your life, remembered</title>
+  <style>
+    :root{color-scheme:light;--ink:#23312b;--muted:#708078;--green:#286b54;--pale:#e8f1e9;--line:#e3eae4;--paper:#f8faf7}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;place-items:center;padding:24px}
+    main{width:min(100%,520px);background:#fff;border:1px solid var(--line);border-radius:18px;padding:34px;box-shadow:0 18px 55px #1d35250d}
+    .mark{display:grid;place-items:center;width:44px;height:44px;border-radius:14px 14px 14px 4px;background:var(--green);color:#fff;font:italic 30px Georgia,serif;margin-bottom:25px}
+    .kicker{font-size:10px;font-weight:700;letter-spacing:1.7px;color:#829088;margin:0 0 9px}h1{font-size:32px;letter-spacing:-1.1px;line-height:1.15;margin:0}h1 em{font:italic 34px Georgia,serif;color:var(--green)}.intro{color:var(--muted);margin:12px 0 25px}
+    label{display:block;font-size:12px;font-weight:650;margin-bottom:7px}input{display:block;width:100%;height:46px;border:1px solid #dce5de;border-radius:8px;padding:0 12px;font:13px system-ui;color:var(--ink);outline-color:#72a087}input::placeholder{color:#a2ada5}
+    button{width:100%;height:46px;border:0;border-radius:8px;background:var(--green);color:#fff;font:650 14px system-ui;margin-top:12px;cursor:pointer}button:hover{background:#205841}button:focus-visible,input:focus-visible{outline:3px solid #9bc2a5;outline-offset:2px}
+    .error{min-height:20px;color:#a34239;font-size:12px;margin:8px 0 0}.note{background:var(--pale);border-radius:9px;padding:12px 14px;color:#596b60;font-size:12px;margin-top:22px}.note strong{color:#315f47}.foot{color:#9aa49d;font-size:10px;letter-spacing:.6px;margin:25px 0 0}
+    @media(max-width:480px){main{padding:26px 22px}h1{font-size:29px}}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark" aria-hidden="true">d</div>
+    <p class="kicker">YOUR LIFE, REMEMBERED</p>
+    <h1>Keep track of <em>what matters.</em></h1>
+    <p class="intro">Connect this Vercel page to your private Google Apps Script deployment to open your tracker.</p>
+    <form id="launch-form">
+      <label for="app-url">Apps Script web app URL</label>
+      <input id="app-url" type="url" inputmode="url" autocomplete="url" placeholder="https://script.google.com/macros/s/…/exec" required>
+      <p id="error" class="error" role="alert"></p>
+      <button type="submit">Open my tracker →</button>
+    </form>
+    <div class="note"><strong>One-time setup:</strong> in Apps Script, choose Deploy → Manage deployments and copy the Web app URL. Your tracker and data remain in Google; this page only opens that deployment.</div>
+    <p class="foot">PRIVATE BY DESIGN · STORED IN YOUR GOOGLE SHEET</p>
+  </main>
+  <script>
+    const input=document.getElementById('app-url');
+    const error=document.getElementById('error');
+    try{input.value=localStorage.getItem('daymark-app-url')||''}catch(_){ }
+    document.getElementById('launch-form').addEventListener('submit',event=>{
+      event.preventDefault();error.textContent='';
+      let url;
+      try{url=new URL(input.value.trim())}catch(_){error.textContent='Enter the full Apps Script web app URL.';return}
+      if(url.protocol!=='https:'||url.hostname!=='script.google.com'||!/^\/macros\/s\/[^/]+\/exec\/?$/.test(url.pathname)){
+        error.textContent='Use the Web app URL copied from Apps Script → Deploy → Manage deployments.';return
+      }
+      try{localStorage.setItem('daymark-app-url',url.href)}catch(_){ }
+      window.location.assign(url.href);
+    });
+  </script>
+</body>
+</html>

@@ -6,7 +6,7 @@ A responsive, mobile-first event log served by Google Apps Script. Google Sheets
 
 1. Open [the Daymark spreadsheet](https://docs.google.com/spreadsheets/d/11BXs1kwoDycjSUULlaY6_clbd_yXtpFQC3yOoAF_Jc0/edit).
 2. Choose **Extensions → Apps Script**. This creates a script bound to the spreadsheet.
-3. Replace the starter `Code.gs` with this folder's `Code.gs`. Add HTML files named `Index`, `Styles`, and `Client`, copying the corresponding `.html` files. Set the manifest in Project Settings or replace `appsscript.json` with the provided manifest.
+3. Replace the starter `Code.gs` with this folder's `Code.gs`. Add HTML files named `Tracker`, `Styles`, and `Client`, copying the corresponding `.html` files. (The lowercase `index.html` is the separate Vercel launch page.) Set the manifest in Project Settings or replace `appsscript.json` with the provided manifest.
 4. Save. In the editor, select and run `setupTracker` once. Review the Google permission prompt and authorize Sheets access. It creates the `Activities` and `Events` tabs with the required headers if they do not already exist. Existing nonempty tabs are retained; unexpected headers cause a clear error rather than being overwritten.
 5. Run `runDateLogicTests` in the editor; it should return three passing date cases.
 6. Choose **Deploy → New deployment → Web app**. Set **Execute as: User accessing the web app** and **Who has access: Only myself**. Deploy and authorize. Open the web app URL while signed into the same Google account that owns/has edit access to the spreadsheet.
@@ -18,7 +18,7 @@ The code includes the spreadsheet ID supplied in the request. Google authorizati
 
 Run `Push-to-GitHub.cmd` from this folder on a machine with Git installed and authenticated for `AslamGeek/life-logs`. It clones the repository to a fresh temporary directory, copies these app files into the repository root, creates/pushes `main`, and asks for Git author name/email if Git has no configured identity. It does not overwrite a local checkout or store a GitHub token in the script. Review the Git output; the temporary clone is left in place after completion.
 
-This repository content is a Google Apps Script project, not a Vercel frontend. Pushing it creates a branch so GitHub can find the source, but Vercel cannot run the Apps Script `google.script.run` UI as a Vercel app. Host this version as an Apps Script web app, or create a Vercel frontend that calls a separately deployed Apps Script backend.
+The Google Apps Script UI and Sheets backend run on Apps Script. The root `index.html` is a small Vercel launch page: it stores the Apps Script deployment URL in that browser and opens the actual tracker on Google. The repository-root `vercel.json` explicitly serves that page at `/`. After pushing, make sure the Vercel project's Root Directory is the repository root and redeploy the latest `main` commit. The page asks for the URL copied from Apps Script → Deploy → Manage deployments. It does not mirror event data or Google credentials into Vercel.
 
 ## Data model
 
